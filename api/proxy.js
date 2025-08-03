@@ -1,23 +1,34 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/proxy', async (req, res) => {
+app.post('/proxy', async (req, res) => {
   const apiUrl = 'https://cubet.keka.com/k/attendance/api/mytime/attendance/summary';
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': req.headers['authorization'], // Pass through the auth
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(req.body),
-  });
-  const data = await response.json();
-  res.json(data);
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': req.headers['authorization'], // Pass auth from frontend
+        'Content-Type': 'application/json; charset=utf-8',
+      }
+    });
+
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (jsonError) {
+      return res.status(502).json({ error: 'Invalid JSON from upstream', details: jsonError.message, raw: text });
+    }
+    res.json(text);
+  } catch (error) {
+    res.status(500).json({ error: 'Proxy error', details: error.message });
+  }
 });
 
-app.listen(3000, () => console.log('Proxy running on port 3000'));
+// app.listen(3001, () => {
+//   console.log('Proxy server running on http://localhost:3001');
+// });
