@@ -1,17 +1,21 @@
-const express = require('express');
-const cors = require('cors');
+module.exports = async (req, res) => {
+  // Set CORS headers for serverless
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-app.post('/proxy', async (req, res) => {
   const apiUrl = 'https://cubet.keka.com/k/attendance/api/mytime/attendance/summary';
   try {
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'Authorization': req.headers['authorization'], // Pass auth from frontend
+        'Authorization': req.headers['authorization'],
         'Content-Type': 'application/json; charset=utf-8',
       }
     });
@@ -23,12 +27,8 @@ app.post('/proxy', async (req, res) => {
     } catch (jsonError) {
       return res.status(502).json({ error: 'Invalid JSON from upstream', details: jsonError.message, raw: text });
     }
-    res.json(text);
+    res.json(data);
   } catch (error) {
     res.status(500).json({ error: 'Proxy error', details: error.message });
   }
-});
-
-// app.listen(3001, () => {
-//   console.log('Proxy server running on http://localhost:3001');
-// });
+};
